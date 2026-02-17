@@ -28,7 +28,10 @@ func handlerValidate (w http.ResponseWriter, r *http.Request) {
 		return 
 	}
 
-	respondWithJSON(w, 200, true)
+	filteredChirp := filterWords(params.Body)
+
+
+	respondWithJSON(w, 200, filteredChirp)
 }
 
 func respondWithError(w http.ResponseWriter, code int, errorDesc string) {
@@ -56,11 +59,12 @@ func respondWithError(w http.ResponseWriter, code int, errorDesc string) {
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 
 	type returnVals struct {
-		Valid interface{} `json:"valid"`
+		Cleaned_Body interface{} `json:"cleaned_body"`
+
 	}
 
 	respBody := returnVals{
-		Valid: payload,
+		Cleaned_Body: payload,
 	}
 
 	dat, err := json.Marshal(respBody)
