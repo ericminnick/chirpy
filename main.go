@@ -4,18 +4,33 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
+
+	"github.com/ericminnick/chirpy/internal/database"
+
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
-	fileserverHits atomic.Int32
+	fileserverHits 	atomic.Int32
+	queries			Queries		
 }
 
 func main() {
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("Error opening sql %s", err)
+	}
+
+	dbQueries := database.New(db)
+
 	mux := http.NewServeMux()
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
+		queries: dbQueries,
 	}
 
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
