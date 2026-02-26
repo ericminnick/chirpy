@@ -19,12 +19,12 @@ func handlerValidate (w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
-		respondWithError(w, 500, "Error decoding parameters")
+		respondWithError(w, 500, "Error decoding parameters", err)
 		return
 	}
 
 	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp too long")
+		respondWithError(w, 400, "Chirp too long", nil)
 		return 
 	}
 
@@ -34,7 +34,7 @@ func handlerValidate (w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, 200, filteredChirp)
 }
 
-func respondWithError(w http.ResponseWriter, code int, errorDesc string) {
+func respondWithError(w http.ResponseWriter, code int, errorDesc string, err error) {
 
 	type returnErrors struct{
  		Error string `json:"error"`

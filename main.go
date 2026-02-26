@@ -2,26 +2,35 @@ package main
 
 import (
 	"fmt"
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"sync/atomic"
 
-	"github.com/ericminnick/chirpy/internal/database"
 
+	"github.com/ericminnick/chirpy/internal/database"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	fileserverHits 	atomic.Int32
-	queries			Queries		
+	db				*database.Queries		
+	platform		string
 }
 
 func main() {
+	
+	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("Error opening sql %s", err)
+	}
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
 	}
 
 	dbQueries := database.New(db)
@@ -30,7 +39,8 @@ func main() {
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
-		queries: dbQueries,
+		db: dbQueries,
+		platform: platform,	
 	}
 
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
@@ -38,6 +48,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("POST /api/validate_chirp", handlerValidate)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
 
 	var server http.Server
 	server.Handler = mux
